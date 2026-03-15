@@ -1,0 +1,87 @@
+/* Основные стили приложения */
+.app-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0c0c 0%, #1a1a1a 100%);
+  padding: 2rem 1rem;
+  font-family: 'Roboto', sans-serif;
+}
+
+.app-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Шапка */
+.app-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 1rem;
+}
+
+.app-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(90deg, #bb86fc 0%, #03dac6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.2;
+}
+
+.app-subtitle {
+  font-size: 1.1rem;
+  color: #a1a1a1;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Карточки */
+.app-card {
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  margin-bottom: 2rem;
+  overflow: hidden;
+  border: 1px solid rgba(187, 134, 252, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.app-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(187, 134, 252, 0.15);
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.app-card {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 1.5rem 1rem;
+  }
+  
+  .app-title {
+    font-size: 2rem;
+  }
+  
+  .app-subtitle {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-title {
+    font-size: 1.8rem;
+  }
+  
+  .app-header {
+    margin-bottom: 2rem;
+  }
+}
