@@ -1,33 +1,69 @@
-import React, { useState } from 'react';
-import InputAI from './components/inputAI';
-import AIList from './components/AIList';
+import React, { useState, useEffect } from 'react';
+import UserProfile from './components/UserProfile';
+import Login from './components/Login';
 import './App.css';
 
 function App() {
-  const [refreshKey, setRefreshKey] = useState(0);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-  return (
-    <div className="app-container">
-      <div className="app-content">
-        <header className="app-header">
-          <h1 className="app-title">
-            Библиотека ИИ-моделей
-          </h1>
-          <p className="app-subtitle">
-            Каталог лучших искусственных интеллектов для ваших проектов
-          </p>
-        </header>
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const savedUser = localStorage.getItem('user');
 
-        <div className="app-card">
-          <InputAI onSuccess={() => setRefreshKey(prev => prev + 1)} />
+        if (token && savedUser) {
+            setIsAuthenticated(true);
+            setUser(JSON.parse(savedUser));
+        }
+        setLoading(false);
+    }, []);
+
+    const handleLogin = (userData) => {
+        setIsAuthenticated(true);
+        setUser(userData);
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setIsAuthenticated(false);
+        setUser(null);
+    };
+
+    if (loading) {
+        return <div className="loading">Загрузка...</div>;
+    }
+
+    if (!isAuthenticated) {
+        return <Login onLogin={handleLogin} />;
+    }
+
+    return (
+        <div className="app-container">
+            <div style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                padding: '20px',
+                background: '#0a0a0a'
+            }}>
+                <button
+                    onClick={handleLogout}
+                    style={{
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        border: '1px solid #2a2a3a',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Выйти ({user?.username})
+                </button>
+            </div>
+            <UserProfile />
         </div>
-
-        <div className="app-card">
-          <AIList key={refreshKey} />
-        </div>
-      </div>
-    </div>
-  );
+    );
 }
 
 export default App;
