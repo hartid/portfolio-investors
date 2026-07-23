@@ -1,0 +1,39 @@
+.profit-chart {
+	background: #1e1e2e;
+	border-radius: 12px;
+	padding: 16px;
+	margin-bottom: 20px;
+}
+
+.profit-stats-simple {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 12px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #2a2a3a;
+}
+
+	.profit-stats-simple > div {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 20px;
+		font-weight: bold;
+	}
+
+	.profit-stats-simple .positive {
+		color: #4caf50;
+	}
+
+	.profit-stats-simple .negative {
+		color: #f44336;
+	}
+
+.profit-chart-empty {
+	background: #1e1e2e;
+	border-radius: 12px;
+	padding: 40px;
+	text-align: center;
+	color: #666;
+}

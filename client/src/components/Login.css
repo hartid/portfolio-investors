@@ -79,3 +79,55 @@
     .toggle-auth:hover {
         color: #667eea;
     }
+
+.twofactor-input {
+    width: 100%;
+    padding: 14px;
+    font-size: 24px;
+    text-align: center;
+    letter-spacing: 8px;
+    background: #0a0a0a;
+    border: 1px solid #2a2a3a;
+    border-radius: 8px;
+    color: #4caf50;
+    font-family: monospace;
+    margin: 20px 0;
+}
+
+    .twofactor-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+.back-link {
+    text-align: center;
+    margin-top: 20px;
+    color: #667eea;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+
+.submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+    .submit-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+    }
+
+    .submit-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }

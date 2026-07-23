@@ -158,25 +158,44 @@
         letter-spacing: -0.5px;
     }
 
-/* Кнопки */
-.btn-primary {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+/* НОВЫЙ БЛОК - контейнер для кнопок */
+.header-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+/* НОВАЯ КНОПКА - обновления цен */
+.btn-update {
+    background: #2a2a3a;
     color: #fff;
-    border: 1px solid rgba(100, 100, 200, 0.3);
-    padding: 10px 24px;
+    border: none;
+    padding: 10px 20px;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 500;
     transition: all 0.3s;
 }
 
-    .btn-primary:hover {
+    .btn-update:hover {
+        background: #3a3a4a;
         transform: translateY(-2px);
-        background: linear-gradient(135deg, #1e1e3e 0%, #1a1a4e 100%);
-        border-color: rgba(100, 100, 200, 0.6);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
+/* Существующая кнопка добавления актива */
+.btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: transform 0.2s;
+}
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+    }
 .btn-success {
     background: #1a2a1a;
     color: #4caf50;
@@ -483,5 +502,141 @@
 
     .profile-details h1 {
         font-size: 1.5rem;
+    }
+}
+.security-section {
+    background: #0d0d0d;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    border: 1px solid #1a1a1a;
+}
+
+.security-header {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #1a1a1a;
+}
+
+    .security-header h3 {
+        margin: 0;
+        color: #fff;
+    }
+
+.security-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.security-info strong {
+    display: block;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+.security-info p {
+    margin: 0;
+    color: #888;
+    font-size: 14px;
+}
+
+.btn-secondary {
+    background: #2a2a3a;
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+    .btn-secondary:hover {
+        background: #3a3a4a;
+    }
+/* Компактный блок 2FA */
+.twofa-compact {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(30, 30, 40, 0.6);
+    backdrop-filter: blur(8px);
+    padding: 6px 12px;
+    border-radius: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-left: auto;
+}
+
+.twofa-icon {
+    font-size: 14px;
+}
+
+.twofa-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: #aaa;
+    letter-spacing: 0.5px;
+}
+
+.twofa-status {
+    font-size: 12px;
+    font-weight: bold;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+    .twofa-status.enabled {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+    }
+
+    .twofa-status.disabled {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+    }
+
+.twofa-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 20px;
+    color: #888;
+    transition: all 0.2s;
+}
+
+    .twofa-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .twofa-compact {
+        margin-left: 0;
+        margin-top: 10px;
+    }
+
+    .profile-info {
+        flex-wrap: wrap;
+    }
+
+    .profile-stats {
+        order: 1;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .twofa-compact {
+        order: 2;
+        justify-content: center;
+        width: auto;
+        margin: 10px auto 0;
     }
 }

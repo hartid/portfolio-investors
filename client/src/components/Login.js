@@ -8,19 +8,29 @@ const Login = ({ onLogin }) => {
         email: '',
         password: ''
     });
+    const [twoFactorCode, setTwoFactorCode] = useState('');
+    const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+    const [tempUserId, setTempUserId] = useState(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    // Обработчик отправки формы
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
-        // Формирование данных для отправки
+
+        // Если уже прошли первый этап и вводим 2FA код
+        if (requiresTwoFactor) {
+            await submitTwoFactor();
+            return;
+        }
+
+        // Обычный вход или регистрация
         const endpoint = isLogin ? '/api/login' : '/api/register';
         const payload = isLogin
             ? { username: formData.username, password: formData.password }
             : { username: formData.username, email: formData.email, password: formData.password };
-        // Отправка запроса на сервер
+
         try {
             const response = await fetch(`http://localhost:5000${endpoint}`, {
                 method: 'POST',
@@ -33,17 +43,105 @@ const Login = ({ onLogin }) => {
             if (!response.ok) {
                 throw new Error(data.error || 'Ошибка');
             }
-            // Сохранение данных
+
+            // Если требуется 2FA (специальный ответ от сервера)
+            if (data.requiresTwoFactor) {
+                setRequiresTwoFactor(true);
+                setTempUserId(data.userId);
+                setLoading(false);
+                return;
+            }
+
+            // Успешный вход без 2FA
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
             onLogin(data.user);
+
         } catch (err) {
             setError(err.message);
-        } finally {
             setLoading(false);
         }
     };
-    // Рендеринг
+
+    // Отправка 2FA кода
+    const submitTwoFactor = async () => {
+        if (!twoFactorCode || twoFactorCode.length !== 6) {
+            setError('Введите 6-значный код');
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:5000/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: formData.username,
+                    password: formData.password,
+                    twoFactorCode: twoFactorCode
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Неверный код');
+            }
+
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            onLogin(data.user);
+
+        } catch (err) {
+            setError(err.message);
+            setLoading(false);
+        }
+    };
+
+    const switchMode = () => {
+        setIsLogin(!isLogin);
+        setError('');
+        setTwoFactorCode('');
+        setRequiresTwoFactor(false);
+    };
+
+    // Экран ввода 2FA кода
+    if (requiresTwoFactor) {
+        return (
+            <div className="login-container">
+                <div className="login-card">
+                    <h2>🔐 Двухфакторная аутентификация</h2>
+                    <p>Введите код из приложения Google Authenticator</p>
+
+                    <input
+                        type="text"
+                        placeholder="000000"
+                        value={twoFactorCode}
+                        onChange={(e) => setTwoFactorCode(e.target.value.slice(0, 6))}
+                        maxLength={6}
+                        className="twofactor-input"
+                        autoFocus
+                    />
+
+                    {error && <div className="error-message">{error}</div>}
+
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        className="submit-btn"
+                    >
+                        {loading ? 'Проверка...' : 'Подтвердить'}
+                    </button>
+
+                    <p className="back-link" onClick={switchMode}>
+                        ← Вернуться к входу
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // Обычная форма входа/регистрации
     return (
         <div className="login-container">
             <div className="login-card">
@@ -78,12 +176,12 @@ const Login = ({ onLogin }) => {
                         required
                     />
 
-                    <button type="submit" disabled={loading}>
+                    <button type="submit" disabled={loading} className="submit-btn">
                         {loading ? 'Загрузка...' : (isLogin ? 'Войти' : 'Зарегистрироваться')}
                     </button>
                 </form>
 
-                <p onClick={() => setIsLogin(!isLogin)} className="toggle-auth">
+                <p onClick={switchMode} className="toggle-auth">
                     {isLogin ? 'Нет аккаунта? Зарегистрируйтесь' : 'Уже есть аккаунт? Войдите'}
                 </p>
             </div>

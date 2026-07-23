@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
+
 );
 
 CREATE TABLE IF NOT EXISTS portfolios (
