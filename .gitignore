@@ -22,6 +22,15 @@ bld/
 *.mdf
 *.ldf
 
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Server runtime
+*.log
+*.pid
+
 # Other
 node_modules/
 package-lock.json
