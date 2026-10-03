@@ -1,0 +1,12 @@
+.git
+.github
+**/node_modules
+**/build
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.coverage
+**/.env
+**/*.log
+**/*.pid

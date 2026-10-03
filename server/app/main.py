@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from app.database import close_pool, open_pool
+from app.database import dispose_engine
 from app.routers import assets, auth, portfolios, users
 
 if sys.platform == "win32":
@@ -18,9 +18,8 @@ CLIENT_DIST = Path(__file__).resolve().parent.parent.parent / "client" / "build"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await open_pool()
     yield
-    await close_pool()
+    await dispose_engine()
 
 
 app = FastAPI(title="Social Investors API", version="2.0.0", lifespan=lifespan)
@@ -37,6 +36,11 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(portfolios.router, prefix="/api")
 app.include_router(assets.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
+
+
+@app.get("/api/health", tags=["health"])
+async def health():
+    return {"status": "ok"}
 
 
 @app.get("/")

@@ -1,96 +1,101 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import delete, func, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import pool
-from app.schemas import AssetCreate, BulkPriceUpdate, PriceUpdate
+from app.database import get_session
+from app.models import Asset, Portfolio, User
+from app.schemas import AssetCreate, AssetOut, AssetPriceOut, BulkPriceUpdate, PriceUpdate
 from app.security import get_current_user
 
 router = APIRouter(prefix="/assets", tags=["assets"])
 
 
-@router.get("/{portfolio_id}")
-async def get_assets(portfolio_id: int, user: dict = Depends(get_current_user)):
-    async with pool.connection() as conn:
-        result = await conn.execute(
-            "SELECT a.* FROM assets a "
-            "JOIN portfolios p ON a.portfolio_id = p.id "
-            "WHERE a.portfolio_id = %s AND p.user_id = %s "
-            "ORDER BY a.created_at DESC",
-            (portfolio_id, user["id"]),
-        )
-        return await result.fetchall() or []
+def _owned_portfolio_ids(user: User):
+    return select(Portfolio.id).where(Portfolio.user_id == user.id)
 
 
-@router.post("")
-async def create_asset(data: AssetCreate, user: dict = Depends(get_current_user)):
-    async with pool.connection() as conn:
-        check = await conn.execute(
-            "SELECT id FROM portfolios WHERE id = %s AND user_id = %s",
-            (data.portfolio_id, user["id"]),
-        )
-        if not await check.fetchone():
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Доступ запрещен")
-
-        result = await conn.execute(
-            "INSERT INTO assets "
-            "(portfolio_id, asset_type, symbol, name, quantity, purchase_price, "
-            " current_price, purchase_date, notes) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
-            (
-                data.portfolio_id,
-                data.asset_type,
-                data.symbol,
-                data.name,
-                data.quantity,
-                data.purchase_price,
-                data.current_price,
-                data.purchase_date,
-                data.notes,
-            ),
-        )
-        return await result.fetchone()
+async def _set_price(session: AsyncSession, user: User, asset_id, price) -> Asset | None:
+    return await session.scalar(
+        update(Asset)
+        .where(Asset.id == asset_id, Asset.portfolio_id.in_(_owned_portfolio_ids(user)))
+        .values(current_price=price, updated_at=func.now())
+        .returning(Asset)
+    )
 
 
-@router.put("/{asset_id}/price")
-async def update_asset_price(
-    asset_id: int, data: PriceUpdate, user: dict = Depends(get_current_user)
+@router.get("/{portfolio_id}", response_model=list[AssetOut])
+async def get_assets(
+    portfolio_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ):
-    async with pool.connection() as conn:
-        result = await conn.execute(
-            "UPDATE assets SET current_price = %s, updated_at = NOW() "
-            "WHERE id = %s AND portfolio_id IN (SELECT id FROM portfolios WHERE user_id = %s) "
-            "RETURNING id, name, current_price",
-            (data.current_price, asset_id, user["id"]),
-        )
-        row = await result.fetchone()
+    result = await session.scalars(
+        select(Asset)
+        .join(Portfolio, Asset.portfolio_id == Portfolio.id)
+        .where(Asset.portfolio_id == portfolio_id, Portfolio.user_id == user.id)
+        .order_by(Asset.created_at.desc())
+    )
+    return result.all()
 
-    if row is None:
+
+@router.post("", response_model=AssetOut)
+async def create_asset(
+    data: AssetCreate,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    portfolio = await session.scalar(
+        select(Portfolio).where(Portfolio.id == data.portfolio_id, Portfolio.user_id == user.id)
+    )
+    if portfolio is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Доступ запрещен")
+
+    asset = Asset(**data.model_dump())
+    session.add(asset)
+    await session.commit()
+    await session.refresh(asset)
+    return asset
+
+
+@router.put("/{asset_id}/price", response_model=AssetPriceOut)
+async def update_asset_price(
+    asset_id: int,
+    data: PriceUpdate,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    asset = await _set_price(session, user, asset_id, data.current_price)
+    if asset is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Актив не найден")
-    return row
+    await session.commit()
+    return asset
 
 
 @router.post("/update-prices")
-async def update_prices(data: BulkPriceUpdate, user: dict = Depends(get_current_user)):
+async def update_prices(
+    data: BulkPriceUpdate,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
     updates = []
-    async with pool.connection() as conn:
-        for item in data.prices:
-            result = await conn.execute(
-                "UPDATE assets SET current_price = %s, updated_at = NOW() "
-                "WHERE id = %s AND portfolio_id IN (SELECT id FROM portfolios WHERE user_id = %s) "
-                "RETURNING id, name, current_price",
-                (item.get("price"), item.get("id"), user["id"]),
-            )
-            row = await result.fetchone()
-            if row:
-                updates.append(row)
+    for item in data.prices:
+        asset = await _set_price(session, user, item.get("id"), item.get("price"))
+        if asset is not None:
+            updates.append(AssetPriceOut.model_validate(asset))
+    await session.commit()
     return {"updated": len(updates), "assets": updates}
 
 
 @router.delete("/{asset_id}")
-async def delete_asset(asset_id: int, user: dict = Depends(get_current_user)):
-    async with pool.connection() as conn:
-        await conn.execute(
-            "DELETE FROM assets WHERE id = %s "
-            "AND portfolio_id IN (SELECT id FROM portfolios WHERE user_id = %s)",
-            (asset_id, user["id"]),
+async def delete_asset(
+    asset_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    await session.execute(
+        delete(Asset).where(
+            Asset.id == asset_id, Asset.portfolio_id.in_(_owned_portfolio_ids(user))
         )
+    )
+    await session.commit()
     return {"message": "Актив удален"}

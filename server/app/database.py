@@ -1,21 +1,18 @@
-from psycopg.rows import dict_row
-from psycopg_pool import AsyncConnectionPool
+from collections.abc import AsyncIterator
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.config import settings
 
-pool: AsyncConnectionPool = AsyncConnectionPool(
-    settings.database_url,
-    min_size=1,
-    max_size=10,
-    open=False,
-    kwargs={"row_factory": dict_row},
-)
+engine = create_async_engine(settings.database_url, pool_size=10, pool_pre_ping=True)
+
+SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
-async def open_pool() -> None:
-    await pool.open()
-    await pool.wait()
+async def get_session() -> AsyncIterator[AsyncSession]:
+    async with SessionLocal() as session:
+        yield session
 
 
-async def close_pool() -> None:
-    await pool.close()
+async def dispose_engine() -> None:
+    await engine.dispose()

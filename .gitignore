@@ -38,3 +38,7 @@ package-lock.json
 .DS_Store
 dist/
 build/
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/

@@ -8,10 +8,11 @@ import pyotp
 import qrcode
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from psycopg.rows import dict_row
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.database import pool
+from app.database import get_session
+from app.models import User
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -72,7 +73,8 @@ def qr_code_data_url(otpauth_url: str) -> str:
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-) -> dict:
+    session: AsyncSession = Depends(get_session),
+) -> User:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Требуется авторизация")
 
@@ -83,24 +85,20 @@ async def get_current_user(
     except jwt.PyJWTError:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Недействительный токен")
 
-    async with pool.connection() as conn:
-        user = await conn.execute(
-            "SELECT * FROM users WHERE id = %s", (payload.get("userId"),)
-        )
-        row = await user.fetchone()
-
-    if row is None:
+    user_id = payload.get("userId")
+    user = await session.get(User, user_id) if isinstance(user_id, int) else None
+    if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Пользователь не найден")
 
-    return row
+    return user
 
 
-def serialize_user(row: dict) -> dict:
+def serialize_user(user: User) -> dict:
     return {
-        "id": row["id"],
-        "username": row["username"],
-        "email": row["email"],
-        "avatar": row.get("avatar"),
-        "created_at": row["created_at"].isoformat() if row.get("created_at") else None,
-        "two_factor_enabled": row.get("two_factor_enabled", False),
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "avatar": user.avatar,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "two_factor_enabled": bool(user.two_factor_enabled),
     }

@@ -1,7 +1,8 @@
 fastapi>=0.141
 uvicorn[standard]>=0.52
+SQLAlchemy[asyncio]>=2.0.44
+alembic>=1.17
 psycopg[binary]>=3.3
-psycopg-pool>=3.3
 PyJWT>=2.13
 bcrypt>=5.0
 pyotp>=2.10
