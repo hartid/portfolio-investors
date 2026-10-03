@@ -33,6 +33,7 @@ server/                FastAPI-бэкенд
     routers/           auth, portfolios, assets, users
   migrations/          миграции Alembic
   tests/               тесты pytest
+docs/                  тест-кейсы и баг-репорты
   alembic.ini
   requirements.txt     зависимости
   requirements-dev.txt зависимости для разработки и тестов
@@ -119,7 +120,14 @@ cd server
 pytest
 ```
 
-Другую базу можно указать через `TEST_DATABASE_URL`. Тесты проверяют API (регистрация, вход, 2FA, портфели, активы), утилиты безопасности, а также что миграции применяются/откатываются и соответствуют моделям.
+Другую базу можно указать через `TEST_DATABASE_URL`.
+
+Документация по тестированию:
+
+- [Тест-кейсы](docs/test-cases.md) — 45 кейсов по API (позитивные, негативные, безопасность доступа), у каждого есть автотест.
+- [Баг-репорты](docs/bug-reports.md) — 9 найденных дефектов с шагами воспроизведения, серьёзностью и приоритетом.
+- Автотесты на дефекты — `server/tests/test_known_bugs.py`, помечены `xfail(strict=True)`. Отчёт с ними: `pytest -rxX`.
+- Шаблон баг-репорта для GitHub Issues — `.github/ISSUE_TEMPLATE/bug_report.md`.
 
 ## CI/CD
 

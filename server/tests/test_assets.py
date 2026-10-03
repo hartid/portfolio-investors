@@ -113,3 +113,12 @@ async def test_delete_asset(client, register, asset_payload):
     response = await client.delete(f"/api/assets/{asset_id}", headers=alice)
     assert response.status_code == 200
     assert (await client.get(f"/api/assets/{pid}", headers=alice)).json() == []
+
+
+async def test_create_asset_missing_required_fields(client, register):
+    headers, _ = await register("alice")
+    pid = await _portfolio_id(client, headers)
+    response = await client.post("/api/assets", headers=headers, json={"portfolio_id": pid})
+    assert response.status_code == 422
+    missing = {err["loc"][-1] for err in response.json()["detail"]}
+    assert {"asset_type", "name", "quantity", "purchase_price"} <= missing

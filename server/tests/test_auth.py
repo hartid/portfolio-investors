@@ -1,4 +1,10 @@
+from datetime import datetime, timedelta, timezone
+
+import jwt
 import pyotp
+import pytest
+
+from app.config import settings
 
 
 async def test_register_returns_token_and_creates_portfolio(client, register):
@@ -98,3 +104,53 @@ async def test_two_factor_flow(client, register):
     )
     assert step2.status_code == 200
     assert step2.json()["token"]
+
+
+async def test_register_duplicate_email(client, register):
+    await register("alice")
+    response = await client.post(
+        "/api/register",
+        json={"username": "alice2", "email": "alice@example.com", "password": "secret123"},
+    )
+    assert response.status_code == 400
+
+
+async def test_login_unknown_user(client):
+    response = await client.post("/api/login", json={"username": "ghost", "password": "secret123"})
+    assert response.status_code == 401
+
+
+async def test_expired_token(client, register):
+    _, user = await register("alice")
+    token = jwt.encode(
+        {"userId": user["id"], "username": "alice", "exp": datetime.now(timezone.utc) - timedelta(minutes=1)},
+        settings.JWT_SECRET,
+        algorithm="HS256",
+    )
+    response = await client.get("/api/me", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 403
+
+
+async def test_verify_2fa_without_setup(client, register):
+    headers, _ = await register("alice")
+    response = await client.post("/api/2fa/verify", headers=headers, json={"token": "123456"})
+    assert response.status_code == 400
+
+
+@pytest.mark.parametrize(
+    ("method", "url"),
+    [
+        ("GET", "/api/me"),
+        ("GET", "/api/portfolios"),
+        ("GET", "/api/assets/1"),
+        ("POST", "/api/assets"),
+        ("PUT", "/api/assets/1/price"),
+        ("POST", "/api/assets/update-prices"),
+        ("DELETE", "/api/assets/1"),
+        ("POST", "/api/2fa/setup"),
+        ("POST", "/api/2fa/verify"),
+    ],
+)
+async def test_protected_endpoints_require_auth(client, method, url):
+    response = await client.request(method, url, json={})
+    assert response.status_code == 401
